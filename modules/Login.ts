@@ -1,9 +1,6 @@
 import {AxiomModule} from "../Module";
 import * as net from "net"
-
-function strip (text : string) : string {
-	return text.trimRight();
-}
+import {strip} from "./Util";
 
 function isValidNick (text : string) : boolean {
 	return true;
@@ -17,6 +14,14 @@ let ret : AxiomModule = (parent) => {
 	// Requires SocketManager
 	let Input = parent.getModuleData('Input');
 	let SocketManager = parent.getModuleData('SocketManager');
+
+	SocketManager.on("is-socket-ready", (socket : net.Socket, user, decide : Function) => {
+		if (user && !!user.loggedIn) {
+			decide(true);
+		} else {
+			decide(false);
+		}
+	});
 
 	SocketManager.on("set", (socket : net.Socket, data : any) => {
 		Input.ask(socket, "nick: ", (err : Error, nick : Buffer) => {

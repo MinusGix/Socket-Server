@@ -2,6 +2,7 @@ import {AxiomModule} from "../Module";
 import * as net from "net";
 import * as EventEmitter from "events";
 import Axiom from "../Server.js";
+import {sendMessage, strip} from "./Util";
 
 interface ExtendedMapFilterFunc<T> {
 	(value : Object, key : T, map : ExtendedMap<T>) : [net.Socket,Object][];
@@ -86,6 +87,35 @@ class SocketManagerEmitter extends EventEmitter {
 				this.delete(socket);
 			}
 		});
+	}
+
+	sendMessage (socket : net.Socket, text : string) {
+		return sendMessage(socket, text);
+	}
+
+	broadcast (text : string, except : net.Socket[] = []) {
+		this.Sockets.forEach((data, socket : net.Socket) => {
+			if (this.socketReady(socket)) {
+				if (!except.includes(socket)) {
+					this.sendMessage(socket, text);
+				}
+			}
+		});
+	}
+
+	// Emits an event, and any false values will mean no, defaults to true
+	socketReady (socket : net.Socket) : boolean {
+		let user = this.get(socket);
+
+		if (!user) {
+			return false;
+		}
+
+		let responses = [];
+
+		this.emit('is-socket-ready', socket, user, (val = true) => responses.push(val), responses);
+
+		return responses.reduce((prev, cur) => prev && cur, true);
 	}
 }
 
